@@ -37,8 +37,8 @@ class IActorComponent;
 
 namespace actor {
 
-enum class Priority : u32 {
-    High, Default, Low
+enum class CreatePriority : u32 {
+    Highest, High, Middle, Low, Lowest
 };
 
 // I think it's actually a sead enum but whatever
@@ -232,7 +232,7 @@ public:
         EmptyNameRef = 5,
         NoMatchingFactory = 6,
         FailedToAllocateRequest = 7,
-        RequestSuccess = 8,
+        InvalidWatcher = 8,
     };
 
     /*
