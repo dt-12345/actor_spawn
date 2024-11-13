@@ -23,7 +23,7 @@ namespace transceiver {
 class Transceiver {
     virtual ~Transceiver(); // for the vtable
 
-private:
+protected:
     u32 mIndex;
     u32 mChannelMask;
     char mMapNode[0x38]; // whatever
@@ -75,7 +75,7 @@ public:
         PreFinalize, Finalizing, PostFinalize, ScheduledForDeletion, Deleted,
     };
 
-private:
+protected:
     sead::Heap* mInstanceHeap;
     BaseProcId mID;
     sead::SafeString mName;
@@ -146,7 +146,7 @@ public:
 
     sead::Vector3f getPosition() const { return mPosition; }
 
-private:
+protected:
     sead::SafeString mActorName;
     sead::PtrArray<component::IActorComponent> mComponents;
     sead::Buffer<u8> mComponentIndexArray;
