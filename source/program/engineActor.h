@@ -226,10 +226,10 @@ public:
     enum Result : u32 {
         FailedToAcquireWatcher = 0,
         _01 = 1,
-        EmptyActorPath = 2,
+        EmptyActorName = 2,
         FailedToCreatePreActor = 3,
         FailedToCreateBlackboard = 4,
-        EmptyActorName = 5,
+        EmptyNameRef = 5,
         NoMatchingFactory = 6,
         FailedToAllocateRequest = 7,
         RequestSuccess = 8,
