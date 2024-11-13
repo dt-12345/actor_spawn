@@ -7,6 +7,7 @@
 #include <math/seadBoundBox.h>
 #include <math/seadVector.h>
 #include <math/seadMatrix.h>
+#include <prim/seadTypedBitFlag.h>
 #include <prim/seadSafeString.h>
 #include <thread/seadCriticalSection.h>
 
@@ -198,8 +199,14 @@ static_assert(sizeof(ActorBase) == 0x4b8);
 
 class ActorMgr {
 public:
-    // just for create arg
+    // just for create arg (does this actually belong here hmmmmm)
     struct CreateArg {
+        enum class TransformFlags : u8 {
+            UsePosition = 1 << 0,
+            UseRotation = 1 << 1,
+            UseScale = 1 << 2,
+        };
+
         sead::Vector3f position{ 0.f, 0.f, 0.f };
         sead::Matrix33f rotation{ 1.f, 0.f, 0.f, 0.f, 1.f, 0.f, 0.f, 0.f, 1.f };
         sead::Vector3f scale{ 1.f, 1.f, 1.f };
@@ -219,7 +226,7 @@ public:
         // if this is engine::module::IModule::getRuntimeTypeInfoStatic()::sTypeInfo, then it becomes an imaginary autobuilder actor
         void* creator_rtti = nullptr;
         sead::Heap* instance_heap = nullptr;
-        u8 _90;
+        sead::TypedBitFlag<TransformFlags> transform_flags;
     };
     static_assert(sizeof(CreateArg) == 0x98);
 
