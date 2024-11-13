@@ -11,6 +11,13 @@
 #include <prim/seadSafeString.h>
 #include <thread/seadCriticalSection.h>
 
+namespace engine::actor {
+class ActorBaseLink;
+} // namespace engine::actor
+
+using DtorFunc = void (engine::actor::ActorBaseLink*);
+extern DtorFunc* ActorLinkDtor;
+
 namespace sead {
 class ListNode;
 class Function;
@@ -111,11 +118,11 @@ class ActorBaseLink {
 public:
     virtual void checkDerivedRuntimeTypeInfo(void*) const;
     virtual void* getRuntimeTypeInfo() const;
-    virtual ~ActorBaseLink();
+    virtual ~ActorBaseLink() { ActorLinkDtor(this); };
 
 private:
     void* mLinkData;
-    BaseProc::BaseProcId mID;
+    BaseProc::BaseProcId mID = BaseProc::cInvalidId;
     u8 _14;
     u8 _15;
     u8 mRefMask;

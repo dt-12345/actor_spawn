@@ -1,4 +1,5 @@
 #include "engineActor.h"
+#include "engineEvent.h"
 
 #include "lib.hpp"
 #include "utils.hpp"
@@ -6,9 +7,15 @@
 using CreateFunc = bool (engine::actor::ActorMgr*, const sead::SafeString&, const engine::actor::ActorMgr::CreateArg&,
                           engine::actor::CreateWatcherRef*, engine::actor::CreatePriority, engine::actor::PreActor*,
                           engine::actor::ActorFile*, sead::Function*, bool, engine::actor::ActorMgr::Result*, engine::actor::PreActor**);
+using RequestFunc = bool (engine::event::EventMgr*, const engine::event::EventRequestArg&);
+using SetFunc = bool (engine::actor::ActorBaseLink*, engine::actor::ActorBase*, u8);
 
 engine::actor::ActorMgr** g_ActorMgrPtr = nullptr;
+engine::event::EventMgr** g_EventMgrPtr = nullptr;
 CreateFunc* requestCreateActorAsync = nullptr;
+RequestFunc* requestEvent = nullptr;
+SetFunc* setActorLink = nullptr;
+DtorFunc* ActorLinkDtor = nullptr;
 
 HOOK_DEFINE_INLINE(Whistle) {
     static void Callback(exl::hook::InlineCtx* ctx) {
@@ -36,7 +43,7 @@ HOOK_DEFINE_INLINE(Whistle) {
         engine::actor::ActorMgr::Result result;
 
         bool res = requestCreateActorAsync(*g_ActorMgrPtr, actor_name, create_arg, nullptr, engine::actor::CreatePriority::High, nullptr,
-                                nullptr, nullptr, false, &result, nullptr);
+                                            nullptr, nullptr, false, &result, nullptr);
 
         char buf[0x80];
         if (res) {
@@ -47,13 +54,44 @@ HOOK_DEFINE_INLINE(Whistle) {
     }
 };
 
+HOOK_DEFINE_INLINE(ChargeAttack) {
+    static void Callback(exl::hook::InlineCtx* ctx) {
+        auto player = reinterpret_cast<engine::actor::ActorBase*>(ctx->X[0]);
+
+        if (!player || !g_EventMgrPtr || !(*g_EventMgrPtr)) {
+            char buf[0x20];
+            PRINT("Necessary pointers are null")
+            return;
+        }
+
+        engine::event::EventRequestArg request_arg{"DmF_SY_Camp"};
+
+        // third arg is some link reference type mask, usually is 0 but notably is 5 for new item get messages
+        setActorLink(&request_arg.event_starter_link, player, 0);
+
+        bool res = requestEvent(*g_EventMgrPtr, request_arg);
+
+        char buf[0x80];
+        if (res) {
+            PRINT("Requested %s", request_arg.event_name.cstr())
+        } else {
+            PRINT("Failed to request %s", request_arg.event_name.cstr())
+        }
+    }
+};
+
 extern "C" void exl_main(void* x0, void* x1) {
     exl::hook::Initialize();
 
     g_ActorMgrPtr = reinterpret_cast<engine::actor::ActorMgr**>(exl::util::modules::GetTargetOffset(0x04722920));
+    g_EventMgrPtr = reinterpret_cast<engine::event::EventMgr**>(exl::util::modules::GetTargetOffset(0x047258c8));
     requestCreateActorAsync = reinterpret_cast<CreateFunc*>(exl::util::modules::GetTargetOffset(0x00ab92cc));
+    requestEvent = reinterpret_cast<RequestFunc*>(exl::util::modules::GetTargetOffset(0x011f0700));
+    setActorLink = reinterpret_cast<SetFunc*>(exl::util::modules::GetTargetOffset(0x00b7cb84));
+    ActorLinkDtor = reinterpret_cast<DtorFunc*>(exl::util::modules::GetTargetOffset(0x0076eb88));
 
     Whistle::InstallAtOffset(0x01d8fecc);
+    ChargeAttack::InstallAtOffset(0x01d53a94);
 }
 
 extern "C" NORETURN void exl_exception_entry() {
