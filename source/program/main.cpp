@@ -1,6 +1,9 @@
 #include "engineActor.h"
 #include "engineEvent.h"
 
+#include <prim/seadSafeString.h>
+#include <swkbd/swkbd.h>
+
 #include "lib.hpp"
 #include "utils.hpp"
 
@@ -9,6 +12,9 @@ using CreateFunc = bool (engine::actor::ActorMgr*, const sead::SafeString&, cons
                           engine::actor::ActorFile*, sead::Function*, bool, engine::actor::ActorMgr::Result*, engine::actor::PreActor**);
 using RequestFunc = bool (engine::event::EventMgr*, const engine::event::EventRequestArg&);
 using SetFunc = bool (engine::actor::ActorBaseLink*, engine::actor::ActorBase*, u8);
+using ConvertFunc = int (u32*, char*, u32, u16*, int);
+using GetKeyboardFunc = bool (sead::WBufferedSafeString*, int, nn::swkbd::Preset, nn::swkbd::KeyboardMode,
+                                u32, nn::swkbd::InputFormMode);
 
 engine::actor::ActorMgr** g_ActorMgrPtr = nullptr;
 engine::event::EventMgr** g_EventMgrPtr = nullptr;
@@ -16,6 +22,8 @@ CreateFunc* requestCreateActorAsync = nullptr;
 RequestFunc* requestEvent = nullptr;
 SetFunc* setActorLink = nullptr;
 DtorFunc* ActorLinkDtor = nullptr;
+ConvertFunc* convertUtf16ToUtf8 = nullptr;
+GetKeyboardFunc* getKeyboardInput = nullptr;
 
 HOOK_DEFINE_INLINE(Whistle) {
     static void Callback(exl::hook::InlineCtx* ctx) {
@@ -33,12 +41,23 @@ HOOK_DEFINE_INLINE(Whistle) {
         init_info.setParam(sead::SafeString{"EquipmentUser_Weapon"}, sead::SafeString{"Weapon_Sword_124"});
         engine::actor::ActorMgr::CreateArg create_arg;
         create_arg.position = player->getPosition();
-        create_arg.scale = { 2.f, 2.f, 2.f };
+        create_arg.scale = { 1.f, 1.f, 1.f };
         create_arg.blackboard_info = &init_info;
         create_arg.transform_flags.set(engine::actor::ActorMgr::CreateArg::TransformFlags::UsePosition);
         create_arg.transform_flags.set(engine::actor::ActorMgr::CreateArg::TransformFlags::UseScale);
 
-        sead::SafeString actor_name{"Enemy_Lynel_Dark"};
+        char16_t input_buffer[0x80];
+        char name_buffer[0x80];
+
+        sead::WBufferedSafeString input{input_buffer, 0x80};
+        sead::BufferedSafeString actor_name{name_buffer, 0x80};
+
+        getKeyboardInput(&input, 0x80, nn::swkbd::Preset::UserName, nn::swkbd::KeyboardMode::ModeLanguageSet2,
+                            static_cast<u32>(nn::swkbd::InvalidChar::AtMark) | static_cast<u32>(nn::swkbd::InvalidChar::Percent)
+                            | static_cast<u32>(nn::swkbd::InvalidChar::BackSlash), nn::swkbd::InputFormMode::OneLine);
+
+        u32 out_size;
+        convertUtf16ToUtf8(&out_size, name_buffer, 0x80, reinterpret_cast<u16*>(input_buffer), 0x80);
 
         engine::actor::ActorMgr::Result result;
 
@@ -89,6 +108,8 @@ extern "C" void exl_main(void* x0, void* x1) {
     requestEvent = reinterpret_cast<RequestFunc*>(exl::util::modules::GetTargetOffset(0x011f0700));
     setActorLink = reinterpret_cast<SetFunc*>(exl::util::modules::GetTargetOffset(0x00b7cb84));
     ActorLinkDtor = reinterpret_cast<DtorFunc*>(exl::util::modules::GetTargetOffset(0x0076eb88));
+    convertUtf16ToUtf8 = reinterpret_cast<ConvertFunc*>(exl::util::modules::GetTargetOffset(0x00ef6c30));
+    getKeyboardInput = reinterpret_cast<GetKeyboardFunc*>(exl::util::modules::GetTargetOffset(0x01b2b3a0));
 
     Whistle::InstallAtOffset(0x01d8fecc);
     ChargeAttack::InstallAtOffset(0x01d53a94);

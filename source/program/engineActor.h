@@ -136,12 +136,17 @@ struct CreateWatcherLink {
     CreateWatcherRef watcher;
 };
 
-struct ActorTls {
-    virtual ~ActorTls();
+struct LoadCache {
+    virtual ~LoadCache();
 
-    sead::PtrArrayImpl _08;
-    sead::PtrArrayImpl _18;
-    sead::PtrArrayImpl _28;
+    struct Entry {
+        sead::SafeString file_path;
+        sead::SafeString classname;
+    };
+
+    sead::Buffer<u64> mPathHashes; // sead::Buffer<pp::Hash>
+    sead::Buffer<Entry> mLoadEntries;
+    sead::Buffer<char> mPathNameBuffer;
 };
 
 class ActorBase : public BaseProc {
@@ -198,7 +203,7 @@ protected:
     u64 _448;
     u64 _450;
     sead::CriticalSection _458;
-    ActorTls mTLS;
+    LoadCache mTLS;
     u8 _4b0;
     u8 _4b1;
 };
@@ -229,7 +234,7 @@ public:
         bb::InitInfo<32>* _60 = nullptr;
         ActorBase* parent = nullptr;
         ActorBase* dependent = nullptr;
-        ActorBase* _78 = nullptr;
+        ActorBase* creator = nullptr;
         // if this is engine::module::IModule::getRuntimeTypeInfoStatic()::sTypeInfo, then it becomes an imaginary autobuilder actor
         void* creator_rtti = nullptr;
         sead::Heap* instance_heap = nullptr;
