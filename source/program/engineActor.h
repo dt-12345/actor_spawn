@@ -158,6 +158,11 @@ public:
     static constexpr ActorId cInvalidId = 0xffffffff;
 
     sead::Vector3f getPosition() const { return mPosition; }
+    void setPosition(const sead::Vector3f& pos) { mPosition = pos; }
+
+    sead::SafeString getName() const { return mActorName; }
+
+    component::IActorComponent* getComponent(int index) { return mComponents[index]; }
 
 protected:
     sead::SafeString mActorName;

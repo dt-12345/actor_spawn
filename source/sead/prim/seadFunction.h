@@ -26,7 +26,7 @@ public:
     virtual bool isNoDummy() const { return false; }
     virtual void copyTo(AnyFunctionBase* other) const { new (other) IFunction(*this); };
 
-    virtual ~IFunction();
+    virtual ~IFunction() {}
 
     inline R operator()(A... args) const { return invoke(args...); }
 };
@@ -44,7 +44,7 @@ public:
     bool isNoDummy() const override { return true; }
     void copyTo(AnyFunctionBase* other) const override { new (other) Function(*this); }
 
-    ~Function() override;
+    ~Function() override {}
 
     inline R operator()(A... args) const { return invoke(args...); }
 
@@ -65,7 +65,7 @@ public:
     bool isNoDummy() const override { return true; }
     void copyTo(AnyFunctionBase* other) const override { new (other) LambdaFunction(*this); }
 
-    ~LambdaFunction() override;
+    ~LambdaFunction() override {}
 
     inline R operator()(A... args) const { return invoke(args...); }
 
@@ -86,7 +86,7 @@ public:
     bool isNoDummy() const override { return true; }
     void copyTo(AnyFunctionBase* other) const override { new (other) MemberFunction(*this); }
 
-    ~MemberFunction() override;
+    ~MemberFunction() override {}
 
     inline R operator()(A... args) const { return invoke(args...); }
 
